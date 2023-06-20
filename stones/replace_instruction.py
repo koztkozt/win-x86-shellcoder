@@ -10,7 +10,10 @@ MOVE_MNEMONICS = ["mov", "movzx", "movsx", "lea"]
 SRC_PTR_PATTERN = re.compile(r"(\w+),\s*(byte|word|dword)?\s*(ptr)?\s*(\w+:)?\[(.+?)\]")
 DST_PTR_PATTERN = re.compile(r"(byte|word|dword)?\s*(ptr)?\s*(\w+:)?\[(.+?)\],\s*(\w+)")
 
+def hexify(s):
+    return "b'" + re.sub(r'.', lambda m: f'\\x{ord(m.group(0)):02x}', s.decode('latin1')) + "'"
 
+# This function creates a new instruction string by adding dec or inc instructions before and/or after the adjusted instruction string.
 def create_replaced_insn_str(adjust, adjusted_insn_str, ptr_reg, no_after_incdec):
     new_insn_str = ""
     for _ in range(abs(adjust)):
@@ -23,7 +26,7 @@ def create_replaced_insn_str(adjust, adjusted_insn_str, ptr_reg, no_after_incdec
             new_insn_str += f"\n{'inc' if adjust > 0 else 'dec'} {ptr_reg}"
     return new_insn_str
 
-
+# This function creates a new instruction string by adding dec or inc instructions before and/or after the adjusted instruction string.
 def replace_with_incdec(
     adjust, adjusted_insn_str, mnemonic, ptr_reg, op_reg, bad_chars, ptr_is_src
 ):
@@ -50,7 +53,7 @@ def replace_with_incdec(
 
     return None
 
-
+# This function creates a new instruction string by adding dec or inc instructions before and/or after the adjusted instruction string.
 def find_adjust(add_ptr, bad_chars):
     for i in range(1, 0x100 // 2):
         if (add_ptr + i) not in bad_chars and (add_ptr + i) < 0x100:
@@ -58,7 +61,7 @@ def find_adjust(add_ptr, bad_chars):
         elif ((add_ptr - i) & 0xFF) not in bad_chars:
             return -i
 
-
+# This function parses the operand pointer and extracts pointer registers and numeric values.
 def parse_op_ptr(op_ptr, bad_chars):
     ptr_regs, nums = [], []
     for add_ptr in re.findall(r"([+-]?\s*\w+)", op_ptr):
@@ -74,7 +77,7 @@ def parse_op_ptr(op_ptr, bad_chars):
 
     return None, None
 
-
+# This function parses the operand pointer and extracts pointer registers and numeric values.
 def parse_insn(mnemonic, op_str):
     template = op_ptr = op_reg = ptr_is_src = None
 
@@ -93,24 +96,30 @@ def parse_insn(mnemonic, op_str):
         )
         template = f"{mnemonic} {dat_type} {is_ptr} {seg_reg}[{{}}], {op_reg}"
         ptr_is_src = False
-
+    # print(template, op_ptr, op_reg, ptr_is_src)
     return template, op_ptr, op_reg, ptr_is_src
 
-
+# This function parses the operand pointer and extracts pointer registers and numeric values.
 def create_new_insn_str(mnemonic, op_str, bad_chars):
     template, op_ptr, op_reg, ptr_is_src = parse_insn(mnemonic, op_str)
     if not template:
+        print('[-] No template')
         return None
 
     ptr_regs, add_ptr = parse_op_ptr(op_ptr, bad_chars)
     if not ptr_regs:
+        print('[-] No ptr_regs')
         return None
 
     adjust = find_adjust(add_ptr, bad_chars)
     if adjust is None:
+        print('[-] No adjust')
         return None
+    print('[+] Adjust is :', adjust)
 
     new_op = f"{'+'.join(ptr_regs)}{'%#+x' % (add_ptr + adjust)}"
+    print('[+] new_op is :', new_op)
+
     adjusted_insn_str = f"{template.format(new_op)}"
 
     for ptr_reg in ptr_regs:
@@ -118,6 +127,7 @@ def create_new_insn_str(mnemonic, op_str, bad_chars):
             adjust, adjusted_insn_str, mnemonic, ptr_reg, op_reg, bad_chars, ptr_is_src
         )
         if new_insn_str:
+            print("[+] new insn str",new_insn_str)
             return new_insn_str
 
     return None
@@ -136,6 +146,10 @@ def replace_insn(insn_str, bad_chars):
         return None
     if " " not in insn_str:
         return None
+    
+    print('---------------------BAD CHARS---------------------------------')
+    print('[ ]',hexify(insn_bytes))
+    print('[ ]',insn_str)
 
     mnemonic = insn_str[: insn_str.index(" ")].strip()
     op_str = insn_str[insn_str.index(" ") :].strip()

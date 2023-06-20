@@ -3,7 +3,8 @@ from ast import literal_eval
 
 import runner
 import stones
-from coder import bind_shell, egghunter, exec_command, reverse_shell
+from coder import bind_shell, egghunter, exec_command, reverse_shell, util
+import re
 
 EXIT_FUNCTIONS = {
     "process": ("KERNEL32.DLL", "TerminateProcess"),
@@ -116,6 +117,18 @@ def parse_args():
         )
         return loadfile_parser
 
+    def setup_loadcode_parser(subparsers):
+        loadcode_parser = subparsers.add_parser(
+            "loadcode", help="Load asm code from file"
+        )
+        loadcode_parser.add_argument(
+            "-f",
+            "--file",
+            required=True,
+            help="File path to load",
+        )
+        return loadcode_parser
+    
     parser = setup_parser()
     mode_subparsers = parser.add_subparsers(
         dest="mode", required=True, help="Shellcode mode"
@@ -126,6 +139,7 @@ def parse_args():
     setup_exec_parser(mode_subparsers)
     setup_egghunter_parser(mode_subparsers)
     setup_loadfile_parser(mode_subparsers)
+    setup_loadcode_parser(mode_subparsers)
 
     return parser.parse_args()
 
@@ -170,11 +184,18 @@ def generate_shellcode(args, bad_chars):
     if args.mode == "loadfile":
         with open(args.file, "rb") as f:
             return f.read()
+    elif args.mode == "loadcode":
+        with open(args.file, "rb") as f:
+            code = f.read().decode('utf-8')
+            replaced_code = stones.replace_instructions(code, bad_chars)
+            return stones.assemble(replaced_code)
 
     code = generate_asm_code(args, bad_chars)
     replaced_code = stones.replace_instructions(code, bad_chars)
     return stones.assemble(replaced_code)
 
+def hexify(s):
+    return "b'" + re.sub(r'.', lambda m: f'\\x{ord(m.group(0)):02x}', s.decode('latin1')) + "'"
 
 def main():
     args = parse_args()
@@ -185,7 +206,7 @@ def main():
 
     shellcode = generate_shellcode(args, bad_chars)
     print(f"# shellcode size: {hex(len(shellcode))} ({len(shellcode)})")
-    print(f"shellcode = {bytes(shellcode)}")
+    print(f"shellcode = {hexify(shellcode)}")
 
     contains_bad_chars = any(c in bad_chars for c in shellcode)
     if contains_bad_chars:

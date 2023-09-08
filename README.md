@@ -174,5 +174,36 @@ python3 win_x86_shellcoder.py -b '\x00' loadcode -f code.txt
 ```
 
 # Other Helper scripts
-`hash.py` to get the hash of a function when resolving the funciton from the library. 
-`push_string,py` to get assembly code to push strings that are null-free and bad chars free. 
+`hash.py` to get the hash of a function when resolving the funciton from the library. \
+```
+python3 hash.py
+[OpenProcessToken]
+ push 0x591ea70f
+[GetDefaultUserProfileDirectoryA]
+ push 0x4c040d3d
+[WinExec]
+ push 0xe8afe98
+```
+
+`push_string,py` to get assembly code to push strings that are null-free and bad chars free. \
+```
+python3 push_string.py
+
+length of Userenv.dll: 11
+
+Output1:
+xor eax eax
+mov al, 0x6c
+push eax
+mov ax, 0x6c64
+push ax
+push 0x2e766e65
+push 0x72657355
+
+Output2 w/o bad chars:
+mov   eax, 0xff93939c
+neg   eax
+push  eax
+push  0x2e766e65
+push  0x72657355
+```

